@@ -9,6 +9,11 @@ const rl = createInterface({
 rl.prompt();
 
 rl.on('line', (line: string) => {
+  if (line.trim() === 'exit') {
+    rl.close();
+    return;
+  }
+  
   console.log(`${line}: command not found`);
   rl.prompt();
 })
