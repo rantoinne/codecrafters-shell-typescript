@@ -1,3 +1,4 @@
+import { which } from "bun";
 import { createInterface } from "readline";
 
 const rl = createInterface({
@@ -6,38 +7,41 @@ const rl = createInterface({
   prompt: "$ ",
 });
 
+const builtinCommands = ['echo', 'exit', 'type'];
+
 rl.prompt();
 
 rl.on('line', (line: string) => {
   const parsedLine = line.trim();
+  const command = parsedLine.split(' ')[0];
+  const args = parsedLine.split(' ').slice(1).join(' ');
 
-  if (parsedLine === 'exit') {
-    rl.close();
-    return;
-  }
+  switch (command) {
+    case 'exit':
+      rl.close();
+      return;
 
-  if (parsedLine.startsWith('echo')) {
-    const message = parsedLine.split(' ').slice(1).join(' ');
-    console.log(message);
-    rl.prompt();
-    return;
-  }
+    case 'echo':
+      console.log(args);
+      break;
 
-  if (parsedLine.startsWith('type')) {
-    const command = parsedLine.split(' ').slice(1).join(' ');
-    if (['echo', 'exit', 'type'].includes(command)) {
-      console.log(`${command} is a shell builtin`);
-    }
-    else if (!command) {
-      console.log('type: missing operand');
-    }
-    else {
-      console.log(`${command}: not found`);
-    }
-    rl.prompt();
-    return;
-  }
-  
-  console.log(`${line}: command not found`);
+    case 'type':
+      if (builtinCommands.includes(args)) {
+        console.log(`${args} is a shell builtin`);
+      } else if(!args) {
+        console.log('type: missing operand');
+      } else {
+        const executablePath = which(args);
+        if (executablePath) {
+          console.log(`${args} is ${executablePath}`);
+        } else {
+          console.log(`${args}: not found`);
+        }
+      }
+      break;
+    default:
+      console.log(`${command}: command not found`);
+  }  
+
   rl.prompt();
 })

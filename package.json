@@ -1,13 +1,13 @@
 {
   "name": "@codecrafters/shell",
-  "description": "Build your own Shell challenge, from CodeCrafters",
-  "type": "module",
-  "scripts": {
-    "dev": "bun run app/main.ts"
-  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^26.6.3",
     "typescript": "^7.0.2"
-  }
+  },
+  "description": "Build your own Shell challenge, from CodeCrafters",
+  "scripts": {
+    "dev": "bun run app/main.ts"
+  },
+  "type": "module"
 }
