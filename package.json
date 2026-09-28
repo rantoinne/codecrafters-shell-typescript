@@ -6,6 +6,8 @@
     "dev": "bun run app/main.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/node": "^26.6.3",
+    "typescript": "^7.0.2"
   }
 }
