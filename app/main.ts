@@ -1,4 +1,4 @@
-import { which } from "bun";
+import which from "which";
 import { createInterface } from "readline";
 
 const rl = createInterface({
@@ -31,7 +31,7 @@ rl.on('line', (line: string) => {
       } else if(!args) {
         console.log('type: missing operand');
       } else {
-        const executablePath = which(args);
+        const executablePath = which.sync(args, { nothrow: true, delimiter: ':' });
         if (executablePath) {
           console.log(`${args} is ${executablePath}`);
         } else {
