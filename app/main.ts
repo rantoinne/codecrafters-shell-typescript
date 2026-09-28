@@ -9,14 +9,31 @@ const rl = createInterface({
 rl.prompt();
 
 rl.on('line', (line: string) => {
-  if (line.trim() === 'exit') {
+  const parsedLine = line.trim();
+
+  if (parsedLine === 'exit') {
     rl.close();
     return;
   }
 
-  if (line.trim().startsWith('echo')) {
-    const message = line.trim().split(' ').slice(1).join(' ');
+  if (parsedLine.startsWith('echo')) {
+    const message = parsedLine.split(' ').slice(1).join(' ');
     console.log(message);
+    rl.prompt();
+    return;
+  }
+
+  if (parsedLine.startsWith('type')) {
+    const command = parsedLine.split(' ').slice(1).join(' ');
+    if (['echo', 'exit', 'type'].includes(command)) {
+      console.log(`${command} is a shell builtin`);
+    }
+    else if (!command) {
+      console.log('type: missing operand');
+    }
+    else {
+      console.log(`${command}: not found`);
+    }
     rl.prompt();
     return;
   }
