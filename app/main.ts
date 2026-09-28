@@ -8,7 +8,7 @@ const rl = createInterface({
   prompt: "$ ",
 });
 
-const builtinCommands = ['echo', 'exit', 'type'];
+const builtinCommands = ['echo', 'exit', 'type', 'pwd'];
 
 rl.prompt();
 
@@ -25,6 +25,10 @@ rl.on('line', (line: string) => {
     case 'echo':
       console.log(args);
       break;
+
+      case 'pwd':
+        console.log(process.cwd());
+        break;
 
     case 'type':
       if (builtinCommands.includes(args)) {
