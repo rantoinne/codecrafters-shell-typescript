@@ -34,7 +34,7 @@ rl.on('line', (line: string) => {
       if (isDirectory(args)) {
         process.chdir(args);
       } else {
-        console.log(`${line}: No such file or directory`);
+        console.log(`${command}: ${args}: No such file or directory`);
       }
       break;
 
