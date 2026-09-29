@@ -1,6 +1,6 @@
-import which from "which";
 import { createInterface } from "readline";
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
+import { findExecutablePath } from "./utils/directory";
 
 const rl = createInterface({
   input: process.stdin,
@@ -36,19 +36,21 @@ rl.on('line', (line: string) => {
       } else if(!args) {
         console.log('type: missing operand');
       } else {
-        const executablePath = which.sync(args, { nothrow: true, delimiter: ':' });
+
+        const executablePath = findExecutablePath(args)
         if (executablePath) {
           console.log(`${args} is ${executablePath}`);
         } else {
           console.log(`${args}: not found`);
         }
+
       }
       break;
 
     default:
-      const executablePath = which.sync(command, { nothrow: true, delimiter: ':' });
+      const executablePath = findExecutablePath(command);
       if (executablePath) {
-        execSync(line, { stdio: 'inherit' });
+        spawnSync(line, { stdio: 'inherit' });
       } else {
         console.log(`${command}: command not found`);
       }
