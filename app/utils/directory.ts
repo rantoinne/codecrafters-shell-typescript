@@ -17,3 +17,12 @@ export const findExecutablePath = (command: string): string | undefined => {
 
   return undefined;
 }
+
+export const isDirectory = (path: string): boolean => {
+  try {
+    accessSync(path, constants.F_OK);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}

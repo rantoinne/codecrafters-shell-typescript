@@ -1,6 +1,6 @@
 import { createInterface } from "readline";
 import { spawnSync } from "child_process";
-import { findExecutablePath } from "./utils/directory";
+import { findExecutablePath, isDirectory } from "./utils/directory";
 
 const rl = createInterface({
   input: process.stdin,
@@ -8,7 +8,7 @@ const rl = createInterface({
   prompt: "$ ",
 });
 
-const builtinCommands = ['echo', 'exit', 'type', 'pwd'];
+const builtinCommands = ['echo', 'exit', 'type', 'pwd', 'cd'];
 
 rl.prompt();
 
@@ -29,6 +29,14 @@ rl.on('line', (line: string) => {
       case 'pwd':
         console.log(process.cwd());
         break;
+
+    case 'cd':
+      if (isDirectory(args)) {
+        process.chdir(args);
+      } else {
+        console.log(`${line}: No such file or directory`);
+      }
+      break;
 
     case 'type':
       if (builtinCommands.includes(args)) {
