@@ -58,7 +58,7 @@ rl.on('line', (line: string) => {
     default:
       const executablePath = findExecutablePath(command);
       if (executablePath) {
-        spawnSync(line, { stdio: 'inherit' });
+        spawnSync(executablePath, args.split(' '), { stdio: 'inherit', argv0: command });
       } else {
         console.log(`${command}: command not found`);
       }
