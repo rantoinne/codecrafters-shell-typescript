@@ -26,3 +26,10 @@ export const isDirectory = (path: string): boolean => {
     return false;
   }
 }
+
+export const parsedPath = (path: string): string => {
+  if (path.startsWith('~')) {
+    return join(process.env.HOME ?? '', path.slice(1));
+  }
+  return path;
+}

@@ -1,6 +1,6 @@
 import { createInterface } from "readline";
 import { spawnSync } from "child_process";
-import { findExecutablePath, isDirectory } from "./utils/directory";
+import { findExecutablePath, isDirectory, parsedPath } from "./utils/directory";
 
 const rl = createInterface({
   input: process.stdin,
@@ -31,8 +31,9 @@ rl.on('line', (line: string) => {
         break;
 
     case 'cd':
-      if (isDirectory(args)) {
-        process.chdir(args);
+      const parsedPathValue = parsedPath(args);
+      if (isDirectory(parsedPathValue)) {
+        process.chdir(parsedPathValue);
       } else {
         console.log(`${command}: ${args}: No such file or directory`);
       }
