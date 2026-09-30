@@ -2,14 +2,20 @@ export const tokenize = (input: string): string[] => {
   const tokens: string[] = [];
   let current = "";
   let inSingleQuotes = false;
+  let inDoubleQuotes = false;
 
   for (const ch of input.trim()) {
-    if (ch === "'") {
+    if (ch === "\"") {
+      inDoubleQuotes = !inDoubleQuotes;
+      continue;
+    }
+
+    if (ch === "'" && !inDoubleQuotes) {
       inSingleQuotes = !inSingleQuotes;
       continue;
     }
 
-    if (ch === " " && !inSingleQuotes) {
+    if (ch === " " && !inSingleQuotes && !inDoubleQuotes) {
       if (current.length > 0) {
         tokens.push(current);
         current = "";
