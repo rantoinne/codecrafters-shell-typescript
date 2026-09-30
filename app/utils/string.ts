@@ -6,12 +6,12 @@ export const tokenize = (input: string): string[] => {
   let isLastCharBackslash = false;
 
   for (const ch of input.trim()) {
-    if (ch === "\\" && !isLastCharBackslash) {
+    if (ch === "\\" && !isLastCharBackslash && !inSingleQuotes) {
       isLastCharBackslash = true;
       continue;
     }
     
-    if (ch === "\"" && !isLastCharBackslash) {
+    if (ch === "\"" && !isLastCharBackslash && !inSingleQuotes) {
       inDoubleQuotes = !inDoubleQuotes;
       continue;
     }
