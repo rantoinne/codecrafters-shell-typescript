@@ -3,19 +3,25 @@ export const tokenize = (input: string): string[] => {
   let current = "";
   let inSingleQuotes = false;
   let inDoubleQuotes = false;
+  let isLastCharBackslash = false;
 
   for (const ch of input.trim()) {
-    if (ch === "\"") {
+    if (ch === "\\" && !isLastCharBackslash) {
+      isLastCharBackslash = true;
+      continue;
+    }
+    
+    if (ch === "\"" && !isLastCharBackslash) {
       inDoubleQuotes = !inDoubleQuotes;
       continue;
     }
 
-    if (ch === "'" && !inDoubleQuotes) {
+    if (ch === "'" && !inDoubleQuotes && !isLastCharBackslash) {
       inSingleQuotes = !inSingleQuotes;
       continue;
     }
 
-    if (ch === " " && !inSingleQuotes && !inDoubleQuotes) {
+    if (ch === " " && !inSingleQuotes && !inDoubleQuotes && !isLastCharBackslash) {
       if (current.length > 0) {
         tokens.push(current);
         current = "";
@@ -24,16 +30,10 @@ export const tokenize = (input: string): string[] => {
     }
 
     current += ch;
+
+    isLastCharBackslash = false;
   }
 
   if (current.length > 0) tokens.push(current);
   return tokens;
 }
-
-export const stringHasQuote = (str: string): boolean => {
-  return str.includes("'");
-};
-
-// echo 'hello   world'   hello
-// hello   worldhello
-// cat '/tmp/f   81' '/tmp/f   43' '/tmp/f   40'
