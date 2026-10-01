@@ -38,8 +38,8 @@ export const tokenize = (input: string): string[] => {
   return tokens;
 }
 
-export const checkSpecialRedirectCharactersAndExtractCommandArgs = (args: string[]): { commandArgs: string[], redirectFile: string } => {
-  const redirectCharacters = ['>', '1>'];
+export const checkSpecialRedirectCharactersAndExtractCommandArgs = (args: string[]): { commandArgs: string[], redirectFile: string, redirectType: string } => {
+  const redirectCharacters = ['>', '1>', '2>'];
 
   const index = args.findIndex(arg => redirectCharacters.includes(arg));
   
@@ -48,6 +48,7 @@ export const checkSpecialRedirectCharactersAndExtractCommandArgs = (args: string
       return {
         commandArgs: args.slice(0, index),
         redirectFile: args[index + 1],
+        redirectType: args[index],
       } 
     }
   }
@@ -55,5 +56,6 @@ export const checkSpecialRedirectCharactersAndExtractCommandArgs = (args: string
   return {
     commandArgs: args,
     redirectFile: '',
+    redirectType: '',
   };
 }

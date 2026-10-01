@@ -1,5 +1,5 @@
 import { createInterface } from "readline";
-import { spawnSync } from "child_process";
+import { spawnSync, type StdioOptions } from "child_process";
 import { findExecutablePath, getFileDescriptorOfFile, isDirectory, parsedPath } from "./utils/directory";
 import { checkSpecialRedirectCharactersAndExtractCommandArgs, tokenize } from "./utils/string";
 import { closeSync, writeFileSync } from "fs";
@@ -16,7 +16,20 @@ rl.prompt();
 
 rl.on('line', (line: string) => {
   const [command, ...args] = tokenize(line);
-  const { commandArgs, redirectFile } = checkSpecialRedirectCharactersAndExtractCommandArgs(args);
+  const { commandArgs, redirectFile, redirectType } = checkSpecialRedirectCharactersAndExtractCommandArgs(args);
+
+  const isStdoutRedirect = redirectFile && (redirectType === ">" || redirectType === "1>");
+  const isStderrRedirect = redirectFile && redirectType === "2>";
+
+  const writeStdout = (text: string) => {
+    if (isStdoutRedirect) writeFileSync(redirectFile, `${text}\n`);
+    else process.stdout.write(`${text}\n`);
+  }
+
+  const writeStderr = (text: string) => {
+    if (isStderrRedirect) writeFileSync(redirectFile, `${text}\n`);
+    else process.stderr.write(`${text}\n`);
+  }
 
   switch (command) {
     case 'exit':
@@ -24,9 +37,8 @@ rl.on('line', (line: string) => {
       return;
 
     case 'echo':
-      if (redirectFile) {
-        writeFileSync(redirectFile, commandArgs.join(' ') + "\n");
-      } else process.stdout.write(commandArgs.join(' ') + "\n");
+      writeStdout(commandArgs.join(' '));
+      if (isStderrRedirect) writeFileSync(redirectFile, '');
       break;
 
     case 'pwd':
@@ -38,25 +50,24 @@ rl.on('line', (line: string) => {
     case 'cd':
       const parsedPathValue = parsedPath(commandArgs.join(' '));
       if (isDirectory(parsedPathValue)) {
-        if (redirectFile) {
-          writeFileSync(redirectFile, '');
-        } else process.chdir(parsedPathValue);
+        process.chdir(parsedPathValue);
+        if (isStderrRedirect) writeFileSync(redirectFile, '');
       } else {
-        console.log(`${command}: ${commandArgs}: No such file or directory`);
+        writeStderr(`${command}: ${commandArgs}: No such file or directory`);
       }
       break;
 
     case 'type':
       if (builtinCommands.includes(commandArgs.join(' '))) {
-        console.log(`${commandArgs} is a shell builtin`);
+        writeStdout(`${commandArgs} is a shell builtin`);
       } else if(!commandArgs) {
-        console.log('type: missing operand');
+        writeStderr('type: missing operand');
       } else {
         const executablePath = findExecutablePath(commandArgs.join(' '))
         if (executablePath) {
-          console.log(`${commandArgs} is ${executablePath}`);
+          writeStdout(`${commandArgs} is ${executablePath}`);
         } else {
-          console.log(`${commandArgs}: not found`);
+          writeStderr(`${commandArgs}: not found`);
         }
       }
       break;
@@ -66,7 +77,10 @@ rl.on('line', (line: string) => {
       if (executablePath) {
         if (redirectFile) {
           const fd = getFileDescriptorOfFile(redirectFile);
-          spawnSync(executablePath, commandArgs, { stdio: ['inherit', fd, 'inherit'], argv0: command });
+          const stdio: StdioOptions = (redirectType === '1>' || redirectType === '>')
+            ? ['inherit', fd, 'inherit'] : ['inherit', 'inherit', fd];
+
+          spawnSync(executablePath, commandArgs, { stdio, argv0: command });
           closeSync(fd);
         } else {
           spawnSync(executablePath, commandArgs, { stdio: 'inherit', argv0: command });
