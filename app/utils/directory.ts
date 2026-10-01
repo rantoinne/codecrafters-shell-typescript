@@ -1,5 +1,5 @@
 import constants from "constants";
-import { accessSync } from "fs";
+import { accessSync, openSync } from "fs";
 import { delimiter, join } from "path"
 
 export const findExecutablePath = (command: string): string | undefined => {
@@ -32,4 +32,9 @@ export const parsedPath = (path: string): string => {
     return join(process.env.HOME ?? '', path.slice(1));
   }
   return path;
+}
+
+export const getFileDescriptorOfFile = (filePath: string): number => {
+  const fd = openSync(filePath, 'w');
+  return fd;
 }

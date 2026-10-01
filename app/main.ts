@@ -1,7 +1,8 @@
 import { createInterface } from "readline";
 import { spawnSync } from "child_process";
-import { findExecutablePath, isDirectory, parsedPath } from "./utils/directory";
-import { tokenize } from "./utils/string";
+import { findExecutablePath, getFileDescriptorOfFile, isDirectory, parsedPath } from "./utils/directory";
+import { checkSpecialRedirectCharactersAndExtractCommandArgs, tokenize } from "./utils/string";
+import { closeSync, writeFileSync } from "fs";
 
 const rl = createInterface({
   input: process.stdin,
@@ -15,6 +16,7 @@ rl.prompt();
 
 rl.on('line', (line: string) => {
   const [command, ...args] = tokenize(line);
+  const { commandArgs, redirectFile } = checkSpecialRedirectCharactersAndExtractCommandArgs(args);
 
   switch (command) {
     case 'exit':
@@ -22,33 +24,39 @@ rl.on('line', (line: string) => {
       return;
 
     case 'echo':
-      console.log(args.join(' '));
+      if (redirectFile) {
+        writeFileSync(redirectFile, commandArgs.join(' ') + "\n");
+      } else process.stdout.write(commandArgs.join(' ') + "\n");
       break;
 
     case 'pwd':
-      console.log(process.cwd());
+      if (redirectFile) {
+        writeFileSync(redirectFile, process.cwd() + "\n");
+      } else process.stdout.write(process.cwd() + "\n");
       break;
 
     case 'cd':
-      const parsedPathValue = parsedPath(args.join(' '));
+      const parsedPathValue = parsedPath(commandArgs.join(' '));
       if (isDirectory(parsedPathValue)) {
-        process.chdir(parsedPathValue);
+        if (redirectFile) {
+          writeFileSync(redirectFile, '');
+        } else process.chdir(parsedPathValue);
       } else {
-        console.log(`${command}: ${args}: No such file or directory`);
+        console.log(`${command}: ${commandArgs}: No such file or directory`);
       }
       break;
 
     case 'type':
-      if (builtinCommands.includes(args.join(' '))) {
-        console.log(`${args} is a shell builtin`);
-      } else if(!args) {
+      if (builtinCommands.includes(commandArgs.join(' '))) {
+        console.log(`${commandArgs} is a shell builtin`);
+      } else if(!commandArgs) {
         console.log('type: missing operand');
       } else {
-        const executablePath = findExecutablePath(args.join(' '))
+        const executablePath = findExecutablePath(commandArgs.join(' '))
         if (executablePath) {
-          console.log(`${args} is ${executablePath}`);
+          console.log(`${commandArgs} is ${executablePath}`);
         } else {
-          console.log(`${args}: not found`);
+          console.log(`${commandArgs}: not found`);
         }
       }
       break;
@@ -56,7 +64,13 @@ rl.on('line', (line: string) => {
     default:
       const executablePath = findExecutablePath(command);
       if (executablePath) {
-        spawnSync(executablePath, args, { stdio: 'inherit', argv0: command });
+        if (redirectFile) {
+          const fd = getFileDescriptorOfFile(redirectFile);
+          spawnSync(executablePath, commandArgs, { stdio: ['inherit', fd, 'inherit'], argv0: command });
+          closeSync(fd);
+        } else {
+          spawnSync(executablePath, commandArgs, { stdio: 'inherit', argv0: command });
+        }
       } else {
         console.log(`${command}: command not found`);
       }
