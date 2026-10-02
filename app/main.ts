@@ -4,13 +4,17 @@ import { findExecutablePath, getFileDescriptorOfFile, isDirectory, parsedPath } 
 import { checkSpecialRedirectCharactersAndExtractCommandArgs, tokenize } from "./utils/string";
 import { closeSync, writeFileSync } from "fs";
 
+const builtinCommands = ['echo', 'exit', 'type', 'pwd', 'cd'];
+
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout,
   prompt: "$ ",
+  completer: (line: string) => {
+    const completions = (builtinCommands.filter(command => command.startsWith(line))).map(c => c + ' ') || [];
+    return [completions, line];
+  }
 });
-
-const builtinCommands = ['echo', 'exit', 'type', 'pwd', 'cd'];
 
 rl.prompt();
 
