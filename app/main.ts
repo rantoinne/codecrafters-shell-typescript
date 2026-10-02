@@ -18,16 +18,17 @@ rl.on('line', (line: string) => {
   const [command, ...args] = tokenize(line);
   const { commandArgs, redirectFile, redirectType } = checkSpecialRedirectCharactersAndExtractCommandArgs(args);
 
-  const isStdoutRedirect = redirectFile && (redirectType === ">" || redirectType === "1>");
-  const isStderrRedirect = redirectFile && redirectType === "2>";
+  const isStdoutRedirect = redirectFile && [">", "1>", ">>", "1>>"].includes(redirectType);
+  const isStderrRedirect = redirectFile && ["2>", "2>>"].includes(redirectType);
+  const isAppending = Boolean(redirectFile && redirectType.endsWith('>>'));
 
   const writeStdout = (text: string) => {
-    if (isStdoutRedirect) writeFileSync(redirectFile, `${text}\n`);
+    if (isStdoutRedirect) writeFileSync(redirectFile, `${text}\n`, { flag: isAppending ? 'a' : 'w' });
     else process.stdout.write(`${text}\n`);
   }
 
   const writeStderr = (text: string) => {
-    if (isStderrRedirect) writeFileSync(redirectFile, `${text}\n`);
+    if (isStderrRedirect) writeFileSync(redirectFile, `${text}\n`, { flag: isAppending ? 'a' : 'w' });
     else process.stderr.write(`${text}\n`);
   }
 
@@ -38,12 +39,12 @@ rl.on('line', (line: string) => {
 
     case 'echo':
       writeStdout(commandArgs.join(' '));
-      if (isStderrRedirect) writeFileSync(redirectFile, '');
+      if (isStderrRedirect) writeFileSync(redirectFile, '', { flag: isAppending ? 'a' : 'w' });
       break;
 
     case 'pwd':
       if (redirectFile) {
-        writeFileSync(redirectFile, process.cwd() + "\n");
+        writeFileSync(redirectFile, process.cwd() + "\n", { flag: isAppending ? 'a' : 'w' });
       } else process.stdout.write(process.cwd() + "\n");
       break;
 
@@ -51,7 +52,7 @@ rl.on('line', (line: string) => {
       const parsedPathValue = parsedPath(commandArgs.join(' '));
       if (isDirectory(parsedPathValue)) {
         process.chdir(parsedPathValue);
-        if (isStderrRedirect) writeFileSync(redirectFile, '');
+        if (isStderrRedirect) writeFileSync(redirectFile, '', { flag: isAppending ? 'a' : 'w' });
       } else {
         writeStderr(`${command}: ${commandArgs}: No such file or directory`);
       }
@@ -76,8 +77,8 @@ rl.on('line', (line: string) => {
       const executablePath = findExecutablePath(command);
       if (executablePath) {
         if (redirectFile) {
-          const fd = getFileDescriptorOfFile(redirectFile);
-          const stdio: StdioOptions = (redirectType === '1>' || redirectType === '>')
+          const fd = getFileDescriptorOfFile(redirectFile, isAppending);
+          const stdio: StdioOptions = isStdoutRedirect
             ? ['inherit', fd, 'inherit'] : ['inherit', 'inherit', fd];
 
           spawnSync(executablePath, commandArgs, { stdio, argv0: command });

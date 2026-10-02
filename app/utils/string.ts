@@ -39,7 +39,7 @@ export const tokenize = (input: string): string[] => {
 }
 
 export const checkSpecialRedirectCharactersAndExtractCommandArgs = (args: string[]): { commandArgs: string[], redirectFile: string, redirectType: string } => {
-  const redirectCharacters = ['>', '1>', '2>'];
+  const redirectCharacters = ['>', '1>', '2>', '>>', '1>>', '2>>'];
 
   const index = args.findIndex(arg => redirectCharacters.includes(arg));
   

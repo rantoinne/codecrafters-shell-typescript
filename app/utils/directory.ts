@@ -34,7 +34,7 @@ export const parsedPath = (path: string): string => {
   return path;
 }
 
-export const getFileDescriptorOfFile = (filePath: string): number => {
-  const fd = openSync(filePath, 'w');
+export const getFileDescriptorOfFile = (filePath: string, isAppending: boolean): number => {
+  const fd = openSync(filePath, isAppending ? 'a' : 'w');
   return fd;
 }
