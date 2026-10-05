@@ -11,7 +11,16 @@ const rl = createInterface({
   output: process.stdout,
   prompt: "$ ",
   completer: (line: string) => {
-    const completions = (builtinCommands.filter(command => command.startsWith(line))).map(c => c + ' ') || [];
+    let completions = (
+      builtinCommands.filter(command => command.startsWith(line))
+    )?.map(c => c + ' ');
+
+    if (!completions.length) {
+      process.stdout.write('\x07');
+    }
+
+    // console.log({completions});
+
     return [completions, line];
   }
 });
