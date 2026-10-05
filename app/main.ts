@@ -1,6 +1,6 @@
 import { createInterface } from "readline";
 import { spawnSync, type StdioOptions } from "child_process";
-import { findExecutablePath, getFileDescriptorOfFile, isDirectory, parsedPath } from "./utils/directory";
+import { executablesMatching, findExecutablePath, getFileDescriptorOfFile, isDirectory, parsedPath } from "./utils/directory";
 import { checkSpecialRedirectCharactersAndExtractCommandArgs, tokenize } from "./utils/string";
 import { closeSync, writeFileSync } from "fs";
 
@@ -12,14 +12,15 @@ const rl = createInterface({
   prompt: "$ ",
   completer: (line: string) => {
     let completions = (
-      builtinCommands.filter(command => command.startsWith(line))
+      [
+        ...builtinCommands.filter(command => command.startsWith(line)),
+        ...executablesMatching(line),
+      ]
     )?.map(c => c + ' ');
 
     if (!completions.length) {
       process.stdout.write('\x07');
     }
-
-    // console.log({completions});
 
     return [completions, line];
   }
