@@ -6,6 +6,8 @@ import { closeSync, writeFileSync } from "fs";
 
 const builtinCommands = ['echo', 'exit', 'type', 'pwd', 'cd'];
 
+let tabPressedCount = 0;
+
 const rl = createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -13,16 +15,32 @@ const rl = createInterface({
   completer: (line: string) => {
     let completions = (
       [
-        ...builtinCommands.filter(command => command.startsWith(line)),
-        ...executablesMatching(line),
+        ...new Set([
+          ...builtinCommands.filter(command => command.startsWith(line)),
+          ...executablesMatching(line),
+        ])
       ]
-    )?.map(c => c + ' ');
+    )?.sort()?.map(c => c + ' ');
 
     if (!completions.length) {
-      process.stdout.write('\x07');
+      process.stdout.write("\x07");
+      return [[], line];
     }
-
-    return [completions, line];
+    
+    if (completions.length === 1) {
+      tabPressedCount = 0;
+      return [completions, line]; // no manual print
+    }
+    
+    if (tabPressedCount === 0) {
+      tabPressedCount++;
+      process.stdout.write("\x07");
+      return [[], line];
+    }
+    
+    tabPressedCount = 0;
+    process.stdout.write(`\n${completions.join("  ")}\n$ ${line}`);
+    return [[], line];
   }
 });
 
