@@ -2,7 +2,8 @@ import { createInterface } from "readline";
 import { spawnSync, type StdioOptions } from "child_process";
 import { executablesMatching, findExecutablePath, getFileDescriptorOfFile, isDirectory, parsedPath } from "./utils/directory";
 import { checkSpecialRedirectCharactersAndExtractCommandArgs, longestCommonPrefix, tokenize } from "./utils/string";
-import { closeSync, writeFileSync } from "fs";
+import { closeSync, readdirSync, writeFileSync } from "fs";
+import { basename, dirname, join } from "path";
 
 const builtinCommands = ['echo', 'exit', 'type', 'pwd', 'cd'];
 
@@ -13,41 +14,101 @@ const rl = createInterface({
   output: process.stdout,
   prompt: "$ ",
   completer: (line: string) => {
-    let matches = (
-      [
-        ...new Set([
-          ...builtinCommands.filter(command => command.startsWith(line)),
-          ...executablesMatching(line),
-        ])
-      ]
-    )?.sort().map(match => match + ' ');
+    const [_, ...args] = tokenize(line);
 
-    if (!matches.length) {
-      process.stdout.write("\x07");
-      return [[], line];
-    }
-    
-    if (matches.length === 1) {
+    if (!args.length) {
+      const matches = (
+        [
+          ...new Set([
+            ...builtinCommands.filter(cmd => cmd.startsWith(line)),
+            ...executablesMatching(line),
+          ])
+        ]
+      )?.sort().map(match => match + ' ');
+  
+      if (!matches.length) {
+        process.stdout.write("\x07");
+        return [[], line];
+      }
+      
+      if (matches.length === 1) {
+        tabPressedCount = 0;
+        return [matches, line]; // no manual print
+      }
+  
+      const lcp = longestCommonPrefix(matches);
+  
+      if (lcp.length > line.length) {
+        tabPressedCount = 0;
+        return [[lcp], line]; // no trailing space
+      }
+      
+      if (tabPressedCount === 0) {
+        tabPressedCount++;
+        process.stdout.write("\x07");
+        return [[], line];
+      }
+      
       tabPressedCount = 0;
-      return [matches, line]; // no manual print
-    }
-
-    const lcp = longestCommonPrefix(matches);
-
-    if (lcp.length > line.length) {
-      tabPressedCount = 0;
-      return [[lcp], line]; // no trailing space
-    }
-    
-    if (tabPressedCount === 0) {
-      tabPressedCount++;
-      process.stdout.write("\x07");
+      process.stdout.write(`\n${matches.join("  ")}\n$ ${line}`);
       return [[], line];
+    } else {
+      const lastArg = args[args.length - 1] ?? "";
+      let dir: string;
+      let prefix: string;
+
+      if (lastArg.endsWith("/")) {
+        dir = lastArg;
+        prefix = "";
+      } else if (lastArg.includes("/")) {
+        dir = dirname(lastArg);
+        prefix = basename(lastArg);
+      } else {
+        dir = ".";
+        prefix = lastArg;
+      }
+      let matches: string[];
+      try {
+        matches = readdirSync(join(process.cwd(), dir), { withFileTypes: true })
+          .filter((e) => e.name.startsWith(prefix))
+          .map((e) => {
+            const completed =
+              dir === "." ? e.name : join(dir, e.name); // "pac..." → "package.json", not "pac/package.json"
+            // dir → trailing / so next Tab can continue; file → trailing space
+            return e.isDirectory() ? completed + "/" : completed + " ";
+          })
+          .sort();
+      } catch {
+        process.stdout.write("\x07");
+        return [[], lastArg];
+      }
+      if (!matches.length) {
+        process.stdout.write("\x07");
+        return [[], lastArg];
+      }
+      if (matches.length === 1) {
+        tabPressedCount = 0;
+        // 2nd value MUST be lastArg so readline replaces only the last word
+        return [matches, lastArg];
+      }
+      const lcp = longestCommonPrefix(matches);
+      // Compare against lastArg (not full line)
+      if (lcp.length > lastArg.length) {
+        tabPressedCount = 0;
+        // strip trailing space from LCP if it's only there because every match had " "
+        // (optional: compute LCP on names before adding " " / "/")
+        return [[lcp.endsWith(" ") ? lcp.slice(0, -1) : lcp], lastArg];
+      }
+      if (tabPressedCount === 0) {
+        tabPressedCount++;
+        process.stdout.write("\x07");
+        return [[], lastArg];
+      }
+      tabPressedCount = 0;
+      // show basenames (or full last-arg forms) then redraw prompt + full line
+      process.stdout.write(`\n${matches.join("  ")}\n$ ${line}`);
+      return [[], lastArg];
     }
-    
-    tabPressedCount = 0;
-    process.stdout.write(`\n${matches.join("  ")}\n$ ${line}`);
-    return [[], line];
   }
 });
 
