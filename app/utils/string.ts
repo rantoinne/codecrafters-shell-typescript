@@ -59,3 +59,16 @@ export const checkSpecialRedirectCharactersAndExtractCommandArgs = (args: string
     redirectType: '',
   };
 }
+
+export const longestCommonPrefix = (strings: string[]): string => {
+  if (!strings.length) return '';
+  let prefix = strings[0];
+
+  for (const s of strings.slice(1)) {
+    while (!s.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+    }
+  }
+
+  return prefix;
+}

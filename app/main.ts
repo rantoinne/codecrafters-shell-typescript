@@ -1,7 +1,7 @@
 import { createInterface } from "readline";
 import { spawnSync, type StdioOptions } from "child_process";
 import { executablesMatching, findExecutablePath, getFileDescriptorOfFile, isDirectory, parsedPath } from "./utils/directory";
-import { checkSpecialRedirectCharactersAndExtractCommandArgs, tokenize } from "./utils/string";
+import { checkSpecialRedirectCharactersAndExtractCommandArgs, longestCommonPrefix, tokenize } from "./utils/string";
 import { closeSync, writeFileSync } from "fs";
 
 const builtinCommands = ['echo', 'exit', 'type', 'pwd', 'cd'];
@@ -13,23 +13,30 @@ const rl = createInterface({
   output: process.stdout,
   prompt: "$ ",
   completer: (line: string) => {
-    let completions = (
+    let matches = (
       [
         ...new Set([
           ...builtinCommands.filter(command => command.startsWith(line)),
           ...executablesMatching(line),
         ])
       ]
-    )?.sort()?.map(c => c + ' ');
+    )?.sort().map(match => match + ' ');
 
-    if (!completions.length) {
+    if (!matches.length) {
       process.stdout.write("\x07");
       return [[], line];
     }
     
-    if (completions.length === 1) {
+    if (matches.length === 1) {
       tabPressedCount = 0;
-      return [completions, line]; // no manual print
+      return [matches, line]; // no manual print
+    }
+
+    const lcp = longestCommonPrefix(matches);
+
+    if (lcp.length > line.length) {
+      tabPressedCount = 0;
+      return [[lcp], line]; // no trailing space
     }
     
     if (tabPressedCount === 0) {
@@ -39,7 +46,7 @@ const rl = createInterface({
     }
     
     tabPressedCount = 0;
-    process.stdout.write(`\n${completions.join("  ")}\n$ ${line}`);
+    process.stdout.write(`\n${matches.join("  ")}\n$ ${line}`);
     return [[], line];
   }
 });
