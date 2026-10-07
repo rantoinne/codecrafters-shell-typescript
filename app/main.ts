@@ -14,9 +14,10 @@ const rl = createInterface({
   output: process.stdout,
   prompt: "$ ",
   completer: (line: string) => {
+    const endsWithSpace = /\s$/.test(line);
     const [_, ...args] = tokenize(line);
 
-    if (!args.length) {
+    if (!args.length && !endsWithSpace) {
       const matches = (
         [
           ...new Set([
