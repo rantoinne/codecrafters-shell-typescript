@@ -5,7 +5,7 @@ import { checkSpecialRedirectCharactersAndExtractCommandArgs, longestCommonPrefi
 import { closeSync, readdirSync, writeFileSync } from "fs";
 import { basename, dirname, join } from "path";
 
-const builtinCommands = ['echo', 'exit', 'type', 'pwd', 'cd'];
+const builtinCommands = ['echo', 'exit', 'type', 'pwd', 'cd', 'complete'];
 
 let tabPressedCount = 0;
 
@@ -68,7 +68,9 @@ const rl = createInterface({
         dir = ".";
         prefix = lastArg;
       }
+
       let matches: string[];
+
       try {
         matches = readdirSync(join(process.cwd(), dir), { withFileTypes: true })
           .filter((e) => e.name.startsWith(prefix))
@@ -83,15 +85,18 @@ const rl = createInterface({
         process.stdout.write("\x07");
         return [[], lastArg];
       }
+
       if (!matches.length) {
         process.stdout.write("\x07");
         return [[], lastArg];
       }
+
       if (matches.length === 1) {
         tabPressedCount = 0;
         // 2nd value MUST be lastArg so readline replaces only the last word
         return [matches, lastArg];
       }
+
       const lcp = longestCommonPrefix(matches);
       // Compare against lastArg (not full line)
       if (lcp.length > lastArg.length) {
