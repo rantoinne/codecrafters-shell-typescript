@@ -179,6 +179,10 @@ rl.on('line', (line: string) => {
       }
       break;
 
+    case 'complete':
+      writeStderr(`complete: ${commandArgs[1]}: no completion specification`);
+      break;
+
     default:
       const executablePath = findExecutablePath(command);
       if (executablePath) {
