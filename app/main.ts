@@ -16,7 +16,31 @@ const rl = createInterface({
   prompt: "$ ",
   completer: (line: string) => {
     const endsWithSpace = /\s$/.test(line);
-    const [_, ...args] = tokenize(line);
+    const [cmd, ...args] = tokenize(line);
+
+    if (cmd && completionSpecs.has(cmd)) {
+      const lastArg = endsWithSpace ? "" : (args[args.length - 1] ?? "");
+      const result = spawnSync(completionSpecs.get(cmd) ?? "", [], {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          COMP_LINE: line,
+          COMP_POINT: String(line.length),
+        },
+      });
+      const hits = (result.stdout ?? "")
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (!hits.length) {
+        process.stdout.write("\x07");
+        return [[], lastArg];
+      }
+      if (hits.length === 1) {
+        return [[hits[0] + " "], lastArg];
+      }
+      return [hits, lastArg];
+    }
 
     if (!args.length && !endsWithSpace) {
       const matches = (
