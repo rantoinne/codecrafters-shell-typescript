@@ -6,6 +6,7 @@ import { closeSync, readdirSync, writeFileSync } from "fs";
 import { basename, dirname, join } from "path";
 
 const builtinCommands = ['echo', 'exit', 'type', 'pwd', 'cd', 'complete'];
+const completionSpecs = new Map<string, string>();
 
 let tabPressedCount = 0;
 
@@ -180,7 +181,22 @@ rl.on('line', (line: string) => {
       break;
 
     case 'complete':
-      writeStderr(`complete: ${commandArgs[1]}: no completion specification`);
+      if (commandArgs[0] === '-C' && commandArgs.length >= 3) {
+        const cmd = commandArgs[2];
+        const script = commandArgs[1];
+        completionSpecs.set(cmd, script);
+        break;
+      }
+      if (commandArgs[0] === '-p') {
+        const cmd = commandArgs[1]
+        const script = completionSpecs.get(cmd);
+        if (script) {
+          writeStdout(`complete -C '${script}' ${cmd}`);
+        } else {
+          writeStderr(`complete: ${commandArgs[1]}: no completion specification`);
+        }
+        break;
+      }
       break;
 
     default:
